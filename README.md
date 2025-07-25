@@ -19,11 +19,15 @@ Our study identifies and visualizes key failure cases using simulation footage a
 
 ## ⚠️ Observed Issues
 
-| ID  | Failure Case                           | Affected Agent(s) |
-|-----|----------------------------------------|-------------------|
-| P1  | Premature stop at intersections        | InterFuser, TransFuser |
-| P2  | Blocked by static vehicles             | InterFuser        |
-| P3  | Struggles under very dark conditions   | InterFuser        |
+| **Problem** | **Model(s)** | **Frequency** |
+|-------------|--------------|----------------|
+| **P1.** Premature Stopping at Traffic-Controlled Intersections | InterFuser | Frequent |
+| **P2.** Agent freezes when obstacles are nearby | InterFuser | Occasional |
+| **P3.** Agent Struggles in Very Dark Conditions | InterFuser | Frequent |
+| **P4.** Car does not fully stop at stop sign | TransFuser | Occasional |
+| **P5.** Cannot see traffic lights turning green | TransFuser | Rare |
+| **P6.** The problem of creeping | TransFuser | Frequent |
+| **P6.** The problem of creeping | LatentTF | Frequent |
 
 Each of these issues is documented with both **video evidence** and **analysis of sensor input/output**.
 
