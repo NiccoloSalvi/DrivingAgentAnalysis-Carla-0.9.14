@@ -6,6 +6,7 @@ Our study identifies and visualizes key failure cases using simulation footage a
 ## 🔍 Overview
 
 - **Environment**: CARLA 0.9.14
+- **Python**: 3.8
 - **Agents analyzed**:  
   - [InterFuser](https://github.com/opendilab/InterFuser)  
   - [TransFuser](https://github.com/autonomousvision/transfuser)
