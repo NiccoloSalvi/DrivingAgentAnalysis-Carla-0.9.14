@@ -1,19 +1,19 @@
 # InterFuser vs TransFuser – Agent Behavior Analysis in CARLA 0.9.14
 
-This repository contains a comparative analysis of the behavior of two autonomous driving agents—**InterFuser** and **TransFuser**—evaluated within the CARLA simulator (version 0.9.14).  
+This repository contains a comparative analysis of the behavior of two autonomous driving agents—**InterFuser** and **TransFuser**—evaluated within the CARLA simulator (version 0.9.14) and Python 3.8.  
 Our study identifies and visualizes key failure cases using simulation footage and qualitative reasoning.
 
 ## 🔍 Overview
 
 - **Environment**: CARLA 0.9.14
 - **Agents analyzed**:  
-  - [InterFuser](https://github.com/NiccoloSalvi/InterFuser-Carla0914)  
-  - [TransFuser](https://github.com/NiccoloSalvi/TransFuser-Carla0914)
+  - [InterFuser](https://github.com/opendilab/InterFuser)  
+  - [TransFuser](https://github.com/autonomousvision/transfuser)
 - **Focus**: Agent behavior in realistic driving scenarios
 
 ## 📑 Contents
 
-- 📄 `report/report.pdf`: Full report including observations, failure analyses, and discussion
+- 📄 `report.pdf`: Full report including observations, failure analyses, and discussion
 - 📁 `gifs/`: Animated examples (GIFs) of major failure cases
 - 📁 `images/`: Additional visual assets from simulations
 
