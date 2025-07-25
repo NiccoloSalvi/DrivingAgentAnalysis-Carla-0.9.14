@@ -1,0 +1,8 @@
+\section{Problem Statement}
+\label{sec:problem}
+
+Autonomous driving benchmarks, like the CARLA Leaderboard, provide essential quantitative scores but often fail to explain why an agent fails. For example, an agent might receive a low Route Completion score for getting stuck, but the metric itself does not reveal the underlying cause. For instance, an autonomous vehicle might remain stationary, failing to complete its route due to an obstacle improperly placed on the sidewalk, rather than due to an actual shortcoming in the model's decision-making capabilities. Was it a perception failure, an overly conservative planner, or a simulation artifact?
+
+We conduct a deep, qualitative investigation into the behavior of three state-of-the-art models: InterFuser, TransFuser and LatentTF. The primary challenge tackled by this study is that even top-performing agents exhibit subtle yet critical failures that are not fully captured by scores alone. These problematic behaviors can be caused by a variety of sources, including complex interactions with other vehicles, strict adherence to traffic rules under ambiguous conditions, or challenging environmental factors like poor lighting.
+
+This study critically examines the performance of these agents in a controlled CARLA environment to identify and diagnose specific failure modes. We aim to understand the root causes of these issues by analyzing the simulation context, sensor inputs, and the models' decision-making processes.

@@ -1,0 +1,337 @@
+\section{Methodology}
+\label{sec:methodology}
+
+This section details the systematic approach used to evaluate the InterFuser and TransFuser agents. We outline the experimental environment, the necessary software adaptations to run the agents on a modern toolchain, and the protocol followed for both quantitative and qualitative analysis.
+
+\subsection{Experimental Setup}
+\label{subsec:setup}
+
+Our evaluation was conducted within a standardized environment to ensure the reproducibility of our findings.
+
+\noindent\textbf{Software Environment:} The experiments were run using CARLA simulator version 0.9.14 and Python 3.8. This represents an update from the original agents' environments (CARLA 0.9.10 and Python 3.7), necessitating the code adaptations detailed below (\autoref{subsec:config}.
+
+\noindent\textbf{Hardware:} All simulations were run on a workstation equipped with a dual Intel Xeon E5-2696 V2 CPU, 144 GB of RAM, and an NVIDIA GeForce RTX 3080ti GPU.
+
+\noindent\textbf{Agents:} We used the official, pre-trained weights for InterFuser and TransFuser (including LatentTF) without any retraining. The models were evaluated ``as-is'' to analyze their out-of-the-box performance.
+
+\subsection{Agent Configuration and Adaptation}
+\label{subsec:config}
+
+Key adaptations for both agents involved resolving dependency conflicts with visualization libraries like \texttt{matplotlib} and \texttt{open3d}, and fixing runtime errors caused by deprecated CARLA API calls, most notably by replacing \texttt{GlobalRoutePlannerDAO} with the current \texttt{GlobalRoutePlanner} class. We also installed specific versions of deep learning packages, such as \texttt{torch-scatter} and \texttt{mmcv-full}, to ensure compatibility with our toolchain. For InterFuser, we further modified the agent's code to save sensor images during simulation, which was essential for our qualitative analysis. These modifications were necessary to achieve stable and reliable execution of the agents in our experimental setup.
+
+All changes have been documented and published on online repositories.\footnote{InterFuser Fork, \url{https://github.com/NiccoloSalvi/InterFuser-Carla0914}}\textsuperscript{,}\footnote{TransFuser Fork, \url{https://github.com/NiccoloSalvi/TransFuser-Carla0914}}
+
+\subsection{Metrics}
+\label{subsec:metrics}
+Our evaluation methodology combined quantitative metrics with in-depth qualitative analysis to provide a comprehensive assessment of agent performance.
+
+\noindent\textbf{Quantitative Evaluation:} We executed the agents on the official CARLA Leaderboard benchmark, running the scenarios and routes publicly available at the following link\footnote{\url{https://github.com/opendilab/InterFuser/tree/main/leaderboard/data/42routes}}.
+Specifically, for the InterFuser agent, we performed two repetitions for each available route and scenario from the provided set. For the TransFuser (TF) agent, in addition to approximately twenty scenarios selected from the CARLA Leaderboard, we also executed several routes specifically from \textit{Town05}, using the evaluation routes accessible at this link\footnote{\url{https://github.com/opendilab/InterFuser/tree/main/leaderboard/data/evaluation_routes}}.
+For each scenario, we collected the standard metrics, including the Driving Score, Route Completion, and a detailed breakdown of infractions (e.g., collisions, running red lights, stop sign violations).
+
+\noindent\textbf{Qualitative Analysis:} The primary goal of this study was to understand the \textit{reasons} behind the quantitative scores. To achieve this, we conducted a systematic review of video recordings and saved images from the simulation runs. This process involved identifying failure patterns, where we manually logged recurring problematic behaviors, such as premature stopping, getting blocked by obstacles, and unsafe ``creeping'' maneuvers.
+Additionally, we dignased the root cause of the failure, where, for each identified failure, we analyzed the corresponding sensor inputs (RGB camera, LiDAR BEV) and model outputs (predicted waypoints, object detection) to hypothesize the root cause.
+Finally, we performed a comparative analysis. We compared the behaviors of InterFuser, TransFuser, and LatentTF in identical scenarios to understand how architectural and sensor differences influenced their decision-making.
+
+\section{Results}
+This section outlines the models used for experimentation and presents a critical analysis of their performance. Our methodology combines a qualitative assessment of agent behavior in carefully selected critical scenarios with a quantitative evaluation based on standard metrics provided by the CARLA simulator.
+
+\subsection{Analysis of Agent Behavior}
+To complement our findings, we employed a structured approach to qualitatively analyze agent behavior. During simulation runs, we recorded video footage and periodically saved sensor data, including RGB camera views, LiDAR BEV outputs and density maps. Each simulation session was reviewed manually to identify and document behavioral failures.
+
+The review process was done by both of us, with each video analyzed independently by both team members to ensure consistency and manageability. Following the individual reviews, we discussed about our observations and defined a set of recurring failures.
+
+To communicate the prevalence of each failure type, we introduced the following frequency labels:
+\begin{itemize}
+    \item\textbf{Frequent:} Occurred in more than 5 distinct episodes across the evaluation set.
+    \item\textbf{Occasional:} Occurred between 3 and 6 times.
+    \item\textbf{Rare:} Occurred once or twice.
+\end{itemize}
+For each failure, we attempted to diagnose the root cause by reviewing corresponding sensor inputs, model outputs and code implementation. This analysis was supplemented by consulting open issues and community discussions in the official GitHub repositories and forums for CARLA\footnote{\url{https://github.com/carla-simulator/carla}}, TransFuser\footnote{\url{https://github.com/autonomousvision/transfuser}} and InterFuser\footnote{\url{https://github.com/opendilab/InterFuser}}.
+
+Our analysis of the driving agents in the CARLA simulator revealed several recurring failure modes. While both models performed well on standard metrics, a closer look at their behavior uncovered specific, repeatable issues that are not immediately obvious from quantitative scores alone. These problems highlight systemic weaknesses in how the agents perceive their environment, interpret rules, and interact with other vehicles.
+
+These issues span from perception-related deficits to suboptimal decision-making heuristics and limitations in motion planning. The most prominent problems observed include: (i) premature stopping at intersections or traffic lights, where the vehicle halts significantly before the designated stop line, thereby impairing its ability to perceive signal changes or proceed through intersections smoothly; (ii) failure to come to a complete stop at stop signs, leading to traffic rule violations; (iii) a tendency to remain indefinitely blocked in the presence of nearby static or dynamic obstacles due to overly conservative safety constraints; (iv) severe degradation of performance under low-light conditions, often manifesting as erratic behavior or misinterpretation of critical environmental cues; (v) unreliable or unsafe creeping behavior, where forced forward movement in stationary conditions frequently results in collisions, particularly in densely populated urban scenarios; and (vi) inadequate throttle control on upward slopes, where the vehicle lacks the torque to initiate motion, resulting in indefinite idling or rollback.
+
+It is important to note that while these problems were observed in the two models, their root causes are not exclusively attributed to neural network deficiencies. Instead, some issues may be caused by other interconnected components of the autonomous driving system, such as inaccuracies in the prediction of movements of nearby subjects.
+These limitations, although heterogeneous in manifestation, collectively reveal systemic weaknesses in perception fusion, behavior arbitration, and predictive modeling. They also highlight the inadequacy of relying solely on rigid heuristics or rule-based fallbacks in scenarios that demand adaptive and context-aware decision-making. 
+
+An overview of the problems encountered can be found in Table \ref{tab:failure_modes}, which summarizes these problems, indicating their frequency and the specific model in which they were observed.
+
+\begin{table}[t]
+    \small
+    \centering
+    \caption{Summary of Common Failure Modes Across Models}
+    \label{tab:failure_modes}
+    \resizebox{\columnwidth}{!}{%
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        \textbf{Problem} & \textbf{Model(s)} & \textbf{Frequency} \\
+        \midrule
+        \textbf{P1.} Premature Stopping at Traffic-Controlled Intersections & InterFuser & Frequent \\
+        \textbf{P2.} Agent freezes when obstacle are nearby & InterFuser & Occasional \\
+        \textbf{P3.} Agent Struggles in Very Dark Conditions & InterFuser & Frequent \\
+        \textbf{P4.} Car does not full stop at stop sign & TransFuser & Occasional \\
+        \textbf{P5.} Cannot see traffic lights turning green & TransFuser & Rare \\
+        \textbf{P6.} The problem of creeping & TransFuser & Frequent \\
+        \textbf{P6.} The problem of creeping & LatentTF & Frequent \\
+        \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+\subsection{P1. Premature Stopping at Traffic-Controlled Intersections}\label{P1}
+\noindent\textbf{Issue.} We observed that the InterFuser agent frequently underestimates its actual distance from traffic lights, often stopping well before the designated stop line or behind vehicles already waiting at the light, even when there is ample space ahead. While this behavior does not directly impact the leaderboard score, it is unrealistic and would be unacceptable in real-world driving scenarios. Stopping too early at intersections can cause abnormal queuing and traffic congestion, thereby increasing the risk of hazardous or difficult situations for other road users.
+In some cases, the agent begins to move when the light turns green, but because it had stopped too far from the intersection, it fails to reach the stop line in time and is forced to stop again at the next red light—ultimately having to wait for an additional green cycle.
+
+\noindent\textbf{Reason.} The key cause of this problem is that the agent has issues in accurately estimating two critical distances: the distance to the relevant traffic light controlling its movement, and the distance to the actual intersection. Inaccurate estimation of these distances leads the vehicle to halt prematurely. This behavior has also been analyzed in this issue from the official repository of the agent\footnote{\url{https://github.com/opendilab/InterFuser/issues/39}}.
+
+\noindent\textbf{Proposed Solution.} Some users in the online discussion have suggested mitigating this issue by reducing the red-light detection threshold, thereby increasing the agent’s sensitivity and enabling it to recognize red lights only at closer proximity. However, this approach risks introducing numerous false positives (instances where more red lights are detected than actually exist) ultimately degrading the agent’s behavior and making its stopping decisions even less reliable.
+A possible solution could be for the agent to use HD map data—which contains exact stop line positions and traffic light locations—to calculate the correct stopping distance relative to its current pose and route. This would eliminate the need to rely only on image-based depth estimation, which is more prone to error as we have observed.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS10_R0_firstStop.png}
+        \Description{The InterFuser agent stops prematurely at a significant distance before the intersection and the stop line.}
+        \caption{Initial premature stop of the InterFuser agent at a traffic-controlled intersection. The ego vehicle incorrectly halts well before the designated stop line, due to inaccurate estimation of its distance to the relevant traffic signal and the intersection. Despite clear and sufficient road space ahead, this overly cautious behavior could lead to abnormal queueing and potential traffic congestion.}
+        \label{fig:RS10_premature_first_stop}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS10_R0_secondStop.png}
+        \Description{The InterFuser agent makes a second stop, closer to the intersection, after initially halting prematurely.}
+        \caption{Second stop of the InterFuser agent, closer to the intersection. Due to its previous premature halt, when the traffic light turns green, the vehicle attempts to reach the intersection but fails to cross in time, resulting in the need to stop again at the subsequent red-light cycle. This inefficient stopping behavior exemplifies the problems caused by initial distance misestimations.}
+        \label{fig:RS10_premature_second_stop}
+    \end{subfigure}
+    \caption{Illustrative example of the InterFuser agent exhibiting unrealistic behavior at traffic-controlled intersections. The vehicle stops prematurely at a considerable distance from the intersection, which leads it to halt twice—initially too far from the stop line, and again closer to the intersection. This behavior causes inefficiencies in traffic flow and would be unacceptable in real-world driving scenarios.}
+    \label{fig:interfuser_premature_stopping}
+\end{figure}
+
+\subsection{P2. Agent freezes when obstacle are nearby}
+\noindent\textbf{Issue.} In some InterFuser agent's scenarios, we observed that when there is an object located close to the side of the ego vehicle, the InterFuser agent tends to stop and remain stuck. This happens because the predicted future trajectory of the nearby object overlaps with the ego vehicle's planned path. As a result, the agent adopts a conservative policy and stays stationary to avoid a potential collision.
+We also encountered this problem in a different setting, where the vehicle inaccurately predicted an object ahead despite the presence of only a static Coca-Cola distributor and a halted pedestrian on its right, further illustrating the limitations of its predictive capabilities.
+
+\noindent\textbf{Reason.} The main cause of this behavior lies in the operation of the safety controller implemented in InterFuser, specifically in the tracking system that predicts future object dynamics. In the scenario observed, the agent correctly detected a cyclist on its right, moving from right to left. Based on the recent movement history, it predicted that the cyclist's future trajectory would intersect with that of the ego vehicle, this is evident in the predicted positions at time steps $t_{1}$ and $t_{2}$. As a result, the safety controller halted the ego vehicle to avoid a potential collision. However, if the detected object (in this case, the cyclist) remains stationary and its predicted position continues to intersect the vehicle's planned path indefinitely, the agent will never resume motion. Consequently, the evaluation ends with an \texttt{Agent blocked timeout}.
+While this behavior is driven by the need to maximize safety and avoid collisions, it highlights a key limitation of the system: predicting future trajectories by propagating observed dynamics—based on stationary assumptions and without advanced predictive models—can lead to permanent blockages in situations of uncertainty or when agents remain in critical positions for extended periods. 
+
+\noindent\textbf{Proposed Solution.} The authors themselves acknowledge in their paper that integrating more sophisticated predictive models could help reduce these instances of blocking. A straightforward way to mitigate this issue is to introduce an additional short-term observation mechanism. Specifically, instead of relying solely on the predicted future positions of nearby objects (based on a moving average of observed dynamics), the agent can utilize a short-term observation buffer to explicitly monitor if detected objects actually exhibit significant movement. When the agent identifies a potential collision risk—such as a nearby cyclist, pedestrian, or even a static object—it should initiate a brief observation period (approximately 3–5 seconds), during which it remains stationary. Throughout this window, the system continuously records the relative position and velocity of the detected object. If the object remains effectively stationary (e.g., exhibiting minimal displacement or velocity consistently below a predefined threshold), the agent can safely infer that the perceived threat is either static or not actively encroaching upon the ego vehicle’s planned path. Once this condition is satisfied, the vehicle can cautiously resume its motion. This solution allows the agent to recover from scenarios of falsely assumed collision risks—such as stationary pedestrians, vending machines, or incorrectly classified static objects—without necessitating complex trajectory forecasting. While this approach is simple and can improve performance in such scenarios, more advanced models, specifically trained to predict surrounding objects' movements accurately, hold potential for even greater effectiveness.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS01_R0_bikeRight.png}
+        \Description{Initial situation with the cyclist stationary on the right side of the ego vehicle.}
+        \caption{Initial scenario showing a stationary cyclist positioned on the sidewalk to the right of the ego vehicle (highlighted in red). Even though the cyclist is not moving, the InterFuser agent detects his presence and incorrectly forecasts his movement into the planned trajectory of the ego vehicle, creating a potential collision scenario.}
+        \label{fig:RS01_initial_bike_right}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS01_R0_wrongPredBike.png}
+        \Description{Incorrect predicted trajectory of the cyclist causing the InterFuser agent to remain stationary.}
+        \caption{Incorrect trajectory prediction of the cyclist. This figure illustrates the incorrectly forecasted trajectory for the cyclist by InterFuser's tracking system (represented by the dashed line). Despite the cyclist remaining stationary throughout the observation period, the predicted trajectory continually intersects the ego vehicle's planned path, causing the vehicle to remain indefinitely stopped.}
+        \label{fig:RS01_incorrect_bike_prediction}
+    \end{subfigure}
+    \caption{Illustrative example of the InterFuser agent being blocked due to its inability to accurately predict the future movements of a detected object located near the ego vehicle. Although the cyclist remains stationary and does not pose an actual threat, the incorrect movement prediction leads the system to adopt a conservative policy, indefinitely halting to avoid a perceived potential collision.}
+    \label{fig:interfuser_prediction_issue}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/new_int_RS25.png}
+    \Description{The InterFuser agent remains stationary due to a static Coca-Cola vending machine located to its right.}
+    \caption{InterFuser agent immobilized due to erroneous collision risk assessment caused by a static Coca-Cola vending machine positioned to its right. Despite the object being clearly stationary and not posing a real threat, the system inaccurately predicts future movement into the ego vehicle’s planned trajectory, leading to indefinite vehicle blockage.}
+    \label{fig:RS25_static_object_blocking}
+\end{figure}
+
+\subsection{P3. Agent Struggles in Very Dark Conditions}
+\noindent\textbf{Issue.} In scenarios with extremely low lighting—such as night-time driving or poorly illuminated urban environments—the InterFuser agent exhibits noticeably degraded behavior. The vehicle struggles to detect and respond to environmental cues, including traffic lights, lane markings, pedestrians, and other vehicles. As a result, it may brake too late, swerve unexpectedly, or fail to react appropriately to dynamic objects on the road. These failures can lead to unsafe driving decisions and an overall drop in navigation performance.
+
+\noindent\textbf{Reason.} The root cause of this problem lies primarily in the limitations of RGB-based perception under low-light conditions. The RGB cameras suffer from reduced visibility in the dark, resulting in poor detection of critical features necessary for navigation. Although the InterFuser agent also uses LiDAR—which is unaffected by lighting—its sensor fusion process relies heavily on information from RGB images. Consequently, when the camera data becomes unreliable, the entire perception and decision-making pipeline is compromised. Furthermore, it's likely that the model was not sufficiently trained on diverse nighttime scenarios, making it less robust to such environments.
+
+\noindent\textbf{Proposed Solution.} To address this limitation, a two-pronged strategy can be employed. First, the model should be retrained or fine-tuned on more diverse datasets that include a substantial number of nighttime and low-light scenes. This would improve its ability to generalize across a wider range of lighting conditions.
+
+Second, the sensor fusion architecture itself could be improved to better leverage LiDAR data when RGB inputs are degraded. One promising approach is to dynamically adjust the weighting of different sensor modalities depending on environmental context—i.e., relying more on LiDAR features when RGB quality is poor. Alternatively, thermal cameras or event-based sensors could be introduced as additional modalities to supplement the system in dark scenarios.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/RS01_dark.png}
+    \Description{RGB image captured in very low lighting conditions. Incorrect predictions by the InterFuser agent are visible through the displayed waypoints, which deviate from the correct trajectory.}
+    \caption{Night-time scenario: the InterFuser agent generates incorrect predictions, failing to correctly identify the empty road due to poor lighting conditions.}
+    \label{fig:dark_RS01}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/RS01_light.png}
+    \Description{The same RGB image as the previous scenario, but under adequate lighting conditions. The waypoints predictions are accurate and closely follow the road trajectory.}
+    \caption{Well-lit scenario: the InterFuser agent generates correct predictions, accurately identifying the clear road trajectory and ensuring safe navigation.}
+    \label{fig:light_RS01}
+\end{figure}
+
+\subsection{P4. Car does not full stop at stop sign}
+\noindent\textbf{Issue.} Simulation analysis revealed that the TransFuser agent occasionally fails to come to a complete stop at stop signs in certain scenarios. This behavior is also documented in the evaluation reports from the CARLA Leaderboard, which record specific violations for failing to comply with stop sign rules.
+
+While the speed value may briefly drop to zero for a few frames, suggesting a momentary stop, in some instances, the agent continues through the intersection without fully halting, thereby breaching standard traffic regulations.
+
+As shown in Figure~\ref{fig:tf_RS18_1}, the vehicle approaches the stop intersection with a speed greater than zero. A few frames later, as shown in Figure~\ref{fig:tf_RS18_2}, it can be seen that the car has passed through the intersection without braking or coming to a complete stop at the sign.
+
+\noindent\textbf{Reason.} The stop sign detection logic in the TransFuser agent relies on proximity-based interaction with CARLA's stop sign actors. Specifically, the agent uses a bounding box intersection method to determine whether the ego vehicle's 3D bounding box intersects with the trigger volume of any nearby stop sign. These stop signs are detected using CARLA's actor filtering mechanism, where the code explicitly searches for actors with names containing the sub-string \textit{'*stop*'}.
+Once nearby stop signs are identified (within a defined radius), the agent checks whether its own bounding box intersects the stop sign’s trigger volume. The trigger volume should represent the distance at which, if a stop is detected, the vehicle should stop. If an intersection is detected while the vehicle is moving (speed > 0), the stop sign is considered a hazard, and the brake will have to be activated. On the other side, if the vehicle is stationary at the time of intersection, the stop sign is marked as "cleared" and subsequent encounters with the same sign are ignored.
+
+However, this logic could introduces some limitations:
+\begin{itemize}
+    \item\textbf{Reliance on proper actor placement}: the detection only works if a stop sign actor is present in the environment with a correctly placed and sized trigger volume. If the CARLA map omits the actor or misplaces the trigger, the agent will fail to recognize the intersection in the correct moment.
+    \item\textbf{Temporal ambiguity in stopping logic}: even when a stop sign is detected, the agent only checks for momentary zero speed during the intersection period. If the vehicle briefly slows to zero (e.g. when it is in a queue of vehicles) but does not pause close to the stop sign line, it may incorrectly interpret this as a valid stop and continue forward, violating realistic traffic behavior.
+    \item\textbf{No visual interpretation of road markings}: the system does not detect road text (e.g., the word \textit{STOP} painted on the asphalt, like in our case as we can see in Figure~\ref{fig:stop}), because such markings are not considered actors in CARLA and have no associated trigger volumes. If a stop location is indicated only via road paint, the vehicle will not recognize it as a stop sign, and therefore violate the intersection.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS18_noStopBefore.png}
+        \Description{Transfuser vehicle approaches the stop sign}
+        \caption{Vehicle approaching the stop}
+        \label{fig:tf_RS18_1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS18_noStopafter.png}
+        \Description{Transfuser vehicle passes the stop sign without halting}
+        \caption{After the stop}
+        \label{fig:tf_RS18_2}
+    \end{subfigure}
+    \caption{Transfuser agent not recognizing the stop intersection and not halting.}
+    \label{fig:stop}
+\end{figure}
+
+\noindent\textbf{Proposed Solution.} One possible solution is to supplement the current actor-based detection system with a visual analysis of the camera input. Specifically, the model can be extended to recognize the word “STOP” when it is painted on the road surface or on signs.
+
+This could be done using a text recognition model (e.g., a small CNN trained to detect road text) applied to RGB cameras inputs. When the model detects the string “STOP” within a certain distance ahead of the vehicle, it can trigger the same stopping behavior used for stop sign actors. 
+This visual detection would act as a complementary system to catch cases where a stop sign actor is missing or misplaced in the simulation and/or the intersection is marked only by road paint.
+By combining both actor-based detection and visual stop word recognition, the agent would be more robust and better aligned with human driving behavior. This approach also brings the system one step closer to real-world perception, where traffic understanding is often based on a combination of signs, signals, and road markings.
+For what concerns the issue where a stop intersection is prematurely marked as "cleared", the current logic considers a stop sign handled if the vehicle's speed reaches zero, even if only momentarily. This can result in the agent continuing through the intersection without performing a full stop, especially if the speed dips to zero for just a brief instant before accelerating again. 
+To solve this, we propose adding a minimum stop duration threshold: when the vehicle enters a stop sign trigger volume (or detects a visual “STOP”), it must remain at 0 speed for a fixed amount of time — for example, 1.0 to 1.5 seconds — before proceeding. This ensures the stop is deliberate and complete, rather than a brief pause that doesn't meet traffic rules.
+
+\subsection{P5. Can not see traffic lights turning green}
+\noindent\textbf{Issue.} In some analyzed scenarios, the TransFuser agent was observed to stop prematurely, well before the designated stop line, when approaching traffic lights. As previously discussed in section \ref{P1}, this abnormal behavior—characterized by overly early stopping at intersections—negatively affects the agent’s ability to correctly interpret the traffic light’s status. As a result, the agent may fail to resume driving promptly, particularly in situations where the green phase is short, ultimately hindering overall navigation performance.
+
+\noindent\textbf{Reason.} The primary cause of this issue lies in the excessive distance between the vehicle’s stopping position and the actual location of the traffic light. At such a distance, correctly identifying changes in the traffic light state (e.g., from red to green) becomes difficult, especially given that RGB camera images may lose crucial visual details at long range.
+
+In particular, scenario evaluations revealed that when the vehicle stopped too far from the traffic light, it often failed to clearly perceive the light turning green. This led to delayed restarts, or in more severe cases, no restart at all—raising potential concerns for traffic flow and road safety.
+
+\noindent\textbf{Proposed Solution.} A possible method to moderate this problem could be to implement a temporal smoothing mechanism for traffic light state detection. Instead of relying only on the current rgb frame to determine the traffic light status, the agent could aggregate recent observations over several frames to better infer when a light has turned green. This would help reduce missed detections caused by stopping at a distance where the light is less visible in individual frames.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{1\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/RS18_stopsFar.png}
+        \Description{TransFuser vehicle stops prematurely at an excessive distance from the intersection, compromising visibility of the traffic light state.}
+        \caption{TransFuser vehicle prematurely stops significantly far from the intersection and the traffic light. The substantial distance between the stopping position and the traffic signal reduces the agent's ability to accurately perceive traffic light state changes, particularly transitions from red to green, due to limited visual clarity at long distances.}
+        \label{fig:tf_tlight_premature_stop}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{1\columnwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/RS18_closer.png}
+        \Description{TransFuser vehicle advances closer to the traffic signal, thus improving its visibility of the traffic light state.}
+        \caption{TransFuser vehicle after advancing closer to the intersection and the traffic signal. The reduced distance considerably enhances the visibility of the traffic light, enabling the agent to correctly identify state transitions (e.g., from red to green) and respond more promptly, thus improving navigation efficiency.}
+        \label{fig:tf_tlight_better_position}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{1\columnwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS18_green.png}
+        \Description{The TransFuser vehicle fails to clearly perceive the green traffic signal due to excessive stopping distance.}
+        \caption{TransFuser vehicle unable to perceive the traffic light's transition to green due to excessive distance from the intersection. The substantial gap between the vehicle and the traffic signal prevents the agent from effectively recognizing when the red light changes to green, causing unnecessary delays or potentially complete failure to resume driving promptly.}
+        \label{fig:tf_unseen_greenlight}
+    \end{subfigure}
+    \caption{Illustrative example of the TransFuser agent's problematic behavior at traffic-controlled intersections. Initial premature stopping, as shown in (a), negatively impacts the vehicle’s ability to accurately detect traffic light state changes. When positioned closer, as shown in (b), the visibility and the ability to promptly respond to the traffic light significantly improves.}
+    \label{fig:far_from_light}
+\end{figure}
+
+\subsection{P6. The problem of creeping}
+\noindent\textbf{Issue.} In several evaluated scenarios, the TransFuser agent demonstrates unsafe behavior triggered by its built-in “creeping” mechanism. While the goal of this behavior is to overcome inertia in situations where the vehicle remains stationary for too long, in practice, it often activates in contexts where the ego vehicle is correctly stopped—such as when waiting at a red light or when blocked by other traffic participants. In these cases, the creeping behavior leads the agent to move forward inappropriately, occasionally resulting in collisions with nearby vehicles or cyclists.
+
+This behavior is particularly problematic in crowded urban environments like \textit{Town05}, where the agent frequently misjudges whether the path ahead is truly clear. We observed multiple cases where creeping was activated despite the presence of surrounding traffic, leading the vehicle to either bump into other agents or be unable to brake in time.
+
+\noindent\textbf{Reason.} The root cause of this issue lies in how the creeping behavior—referred to in the code as \textit{forced move}—is implemented in TransFuser. To counteract the tendency for the model to remain stuck due to learned patterns from training data (where a stationary vehicle often remains stationary), the authors introduced a strategy that triggers motion after the vehicle has been stopped for a prolonged period. Specifically, if the ego vehicle has been stationary for more than 550 frames, a creeping maneuver is activated by setting the PID controller's target speed to 4 m/s.
+
+To avoid unsafe activation, the system includes a safety heuristic: it checks for obstacles in front of the vehicle using LiDAR data. If hits are detected within a predefined safety rectangle surrounding the ego vehicle, the creeping command is suppressed. However, this safety check has limitations. LiDAR sensors often have a minimum detection range, and objects within this range may not be detected. This can result in false negatives, causing the system to believe the area ahead is clear even when it isn’t.
+
+In one analyzed scenario, a cyclist was directly in front of the ego vehicle, but the forced move was still activated due to a failure in obstacle detection—leading to a collision, as shown in Figure~\ref{fig:tf_forced}. In many other cases, the vehicle was reasonably distanced from the car ahead, yet the safety check passed due to the narrow rectangle used for LiDAR checks, again leading to unintended creeping and eventual crashes.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\columnwidth]{images/RS23_forcedTF.png}
+    \Description{TransFuser agent triggers the forced move behavior due to prolonged stationary period, despite an obstacle ahead.}
+    \caption{TransFuser agent activating the forced move mechanism after remaining stationary for an extended period. This behavior, designed to overcome inertia, is triggered even though a cyclist is present directly in front of the vehicle, highlighting limitations in the LiDAR-based obstacle detection heuristic.}
+    \label{fig:tf_forced}
+\end{figure}
+
+These situations are frequent, particularly in traffic-dense maps like \textit{Town05}, where minor misjudgments in space and timing can easily lead to accidents. Figure~\ref{fig:tf_forced_collision} shows a clear example: the vehicle initiates creeping when the forced move flag becomes true (left), and shortly after, collides with the car in front (right). Several similar collisions are reported in the final evaluation logs for this same scenario, all traced back to faulty creeping behavior.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS23_official_forced.png}
+        \Description{TransFuser agent stationary in traffic, forced move flag activates due to extended waiting period.}
+        \caption{Forced move activated}
+        \label{fig:tf_forced_collision_a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/RS23_official_collisionforced.png}
+        \Description{TransFuser agent collides with vehicle in front after creeping forward.}
+        \caption{Resulting collision}
+        \label{fig:tf_forced_collision_b}
+    \end{subfigure}
+    \caption{Illustration of the TransFuser agent's problematic creeping behavior. After remaining stationary for a prolonged period, the forced move mechanism is triggered (a), causing the agent to creep forward erroneously and subsequently collide with the vehicle directly ahead (b). This incident underscores deficiencies in the LiDAR-based safety heuristic used to validate creeping.}
+\label{fig:tf_forced_collision}
+\end{figure}
+
+\paragraph{\textbf{LatentTF}}
+In contrast, the LatentTF model, which does not rely on LiDAR data, uses camera-based perception to detect surrounding vehicles. Its safety heuristic checks for intersections between a rectangular safety area around the ego vehicle and the bounding boxes of nearby objects. If no intersections are found, creeping is allowed.
+
+In our experiments, LatentTF demonstrated better handling of creeping in traffic. For instance, in a dense traffic scenario where the vehicle exceeded the stationary time threshold, creeping was initiated. However, upon detecting a nearby vehicle using bounding box overlap from the camera feed, the agent immediately braked, avoiding a collision. Figures~\ref{fig:latent_forcedmove_a} and \ref{fig:latent_forcedmove_b} illustrate this behavior.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/latend_forced1.png}
+        \Description{LatentTF agent stationary in dense traffic, triggering the forced move after a long waiting period.}
+        \caption{Forced move activated}
+        \label{fig:latent_forcedmove_a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{images/latent_forced2.png}
+        \Description{LatentTF agent creeps forward cautiously but promptly halts upon detecting a nearby obstacle.}
+        \caption{Agent stops promptly}
+        \label{fig:latent_forcedmove_b}
+    \end{subfigure}
+    \caption{Illustration of safer creeping behavior demonstrated by the LatentTF agent. Although initially triggering the forced move due to an extended stationary period (a), the camera-based bounding-box safety heuristic promptly identifies a nearby vehicle, causing the agent to halt before collision (b).}
+    \label{fig:latent_forced}
+\end{figure}
+
+LatentTF appears more cautious in densely populated environments, leading to fewer collisions. Nevertheless, according to the original benchmark results, TransFuser still outperforms LatentTF on average across more diverse weather, towns, and scenario configurations.
+
+\noindent\textbf{Proposed Solution.} A simple but effective way to face this problem, could be to incorporate a short term memory in the safety heuristic. The limitation with LiDAR, is that it fails in detecting the presence of an obstacle when the ego vehicle is stopped too close to it. 
+
+To reduce the occurrences of accidents caused by these type of problems, we propose maintaining a brief temporal buffer of recent LiDAR detections. If an obstacle was clearly detected in front of the vehicle shortly before it stopped, the system should conservatively assume that the obstacle is still present, resulting in the suppression of the forced move and waiting for another cycle of time.
+
+The same idea can also be extended to the camera-based version (LatentTF). When bounding boxes from the camera detect a vehicle, pedestrian, or cyclist in close proximity to the ego vehicle, and that detection suddenly disappears, the agent should not immediately assume the path is clear. Instead, it should reference recent past frames: if the obstacle was visible just before vanishing, the system should treat the zone as occupied.
+
+In general, this solution could be particularly effective for LiDAR-based safety heuristic, which we found more prone to accidents in these situations. 
+Nonetheless, integrating temporal consistency into obstacle checks could improve reliability across both sensing modalities and reduce the likelihood of collisions in highly congested or visually ambiguous situations.
