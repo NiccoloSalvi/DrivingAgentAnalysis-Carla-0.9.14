@@ -44,7 +44,7 @@ Each of these issues is documented with both **video evidence** and **analysis o
 
 These GIFs illustrate critical failure cases observed during simulation.  
 Each clip highlights the limitations of the perception and decision modules under specific conditions such as poor lighting, static obstacles, or ambiguous traffic signals.  
-The corresponding analysis and root cause discussion can be found in the [report](report/report.pdf).
+The corresponding analysis and root cause discussion can be found in the [report](report.pdf).
 
 
 ## 📘 Report
