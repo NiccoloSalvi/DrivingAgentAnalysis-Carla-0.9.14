@@ -31,6 +31,8 @@ Our study identifies and visualizes key failure cases using simulation footage a
 
 Each of these issues is documented with both **video evidence** and **analysis of sensor input/output**.
 
+📄 See [video_index.md](videos/video_index.md) for timestamps of failure cases in each video.
+
 ## 🎬 Sample GIFs
 
 | Failure | Preview |
