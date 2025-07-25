@@ -40,7 +40,7 @@ Each of these issues is documented with both **video evidence** and **analysis o
 | Darkness Navigation Failure | ![](gifs/P3.gif) |
 | Missed Stop Sign | ![](gifs/P4.gif) |
 | Missed Green Light | ![](gifs/P5.gif) |
-| Creeping Behavior | ![](gifs/P6_TF.gif), ![](gifs/P6_LatentTF.gif) |
+| Creeping Behavior | ![](gifs/P6_TF.gif) ![](gifs/P6_LatentTF.gif) |
 | 
 
 These GIFs illustrate critical failure cases observed during simulation.  
