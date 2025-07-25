@@ -35,12 +35,22 @@ Each of these issues is documented with both **video evidence** and **analysis o
 
 | Failure | Preview |
 |--------|---------|
-| Premature Stop | ![](gifs/p1_premature_stop.gif) |
-| Darkness Navigation Failure | ![](gifs/p3_dark_condition.gif) |
+| Premature Stop | ![](gifs/P1.gif) |
+| Agent Frozen Near Obstacle | ![](gifs/P2.gif) |
+| Darkness Navigation Failure | ![](gifs/P3.gif) |
+| Missed Stop Sign | ![](gifs/P4.gif) |
+| Missed Green Light | ![](gifs/P5.gif) |
+| Creeping Behavior | ![](gifs/P6_TF.gif), ![](gifs/P6_LatentTF.gif)  |
+| 
+
+These GIFs illustrate critical failure cases observed during simulation.  
+Each clip highlights the limitations of the perception and decision modules under specific conditions such as poor lighting, static obstacles, or ambiguous traffic signals.  
+The corresponding analysis and root cause discussion can be found in the [report](report/report.pdf).
+
 
 ## 📘 Report
 
-You can find the full analysis in [`report/report.pdf`](report/report.pdf), including:
+You can find the full analysis in [`report.pdf`](report.pdf), including:
 - Metric-based evaluation
 - Root cause discussions
 - Sensor fusion limitations
